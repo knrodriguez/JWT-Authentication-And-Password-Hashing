@@ -1,4 +1,5 @@
 const Sequelize = require('sequelize');
+const jwt=  require('jsonwebtoken');
 const { STRING } = Sequelize;
 const config = {
   logging: false
@@ -16,10 +17,17 @@ const User = conn.define('user', {
 
 User.byToken = async(token)=> {
   try {
-    const user = await User.findByPk(token);
-    if(user){
+    //https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback
+    const verifiedUser = await jwt.verify(token, process.env.JWT);
+    //how do I know what exists in the verifiedUser object? Documentation and console.logs!
+    if(verifiedUser.userId){
+      const user = await User.findByPk(verifiedUser.userId);
       return user;
     }
+    // const user = await User.findByPk(token);
+    // if(user){
+    //   return user;
+    // }
     const error = Error('bad credentials');
     error.status = 401;
     throw error;
@@ -39,7 +47,10 @@ User.authenticate = async({ username, password })=> {
     }
   });
   if(user){
-    return user.id; 
+    //https://github.com/auth0/node-jsonwebtoken#jwtsignpayload-secretorprivatekey-options-callback
+    const token = jwt.sign({userId: user.id}, process.env.JWT)
+    return token; 
+    //return user.id;
   }
   const error = Error('bad credentials');
   error.status = 401;
