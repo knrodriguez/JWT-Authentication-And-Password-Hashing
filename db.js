@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt')
 const { STRING } = Sequelize;
 const config = {
   logging: false
@@ -43,10 +44,10 @@ User.authenticate = async({ username, password })=> {
   const user = await User.findOne({
     where: {
       username,
-      password
+      // password
     }
   });
-  if(user){
+  if(user && await bcrypt.compare(password, user.password)){
     //https://github.com/auth0/node-jsonwebtoken#jwtsignpayload-secretorprivatekey-options-callback
     const token = jwt.sign({userId: user.id}, process.env.JWT)
     return token; 
@@ -56,6 +57,13 @@ User.authenticate = async({ username, password })=> {
   error.status = 401;
   throw error;
 };
+
+User.beforeValidate(async user => {
+  //Sequelize method - https://sequelize.org/master/class/lib/model.js~Model.html#instance-method-changed
+  if(user.changed('password')){
+    user.password = await bcrypt.hash(user.password, 10)
+  }
+})
 
 const syncAndSeed = async()=> {
   await conn.sync({ force: true });
