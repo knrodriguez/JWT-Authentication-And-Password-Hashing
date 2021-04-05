@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 app.use(express.json());
-const { models: { User }} = require('./db');
+const { models: { User, Note }} = require('./db');
 const path = require('path');
 
 app.get('/', (req, res)=> res.sendFile(path.join(__dirname, 'index.html')));
@@ -23,6 +23,17 @@ app.get('/api/auth', async(req, res, next)=> {
     next(ex);
   }
 });
+
+app.get('/api/users/:userId/notes', async (req,res,next) => {
+  try {
+    const notes = await Note.findAll({
+      where: {userId: req.params.userId}
+    })
+    res.send(notes);
+  } catch (error) {
+    next(error)
+  }
+})
 
 app.use((err, req, res, next)=> {
   console.log(err);
