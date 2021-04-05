@@ -17,6 +17,7 @@ app.post('/api/auth', async(req, res, next)=> {
 
 app.get('/api/auth', async(req, res, next)=> {
   try {
+    console.log(req.headers)
     res.send(await User.byToken(req.headers.authorization));
   }
   catch(ex){
@@ -26,10 +27,17 @@ app.get('/api/auth', async(req, res, next)=> {
 
 app.get('/api/users/:userId/notes', async (req,res,next) => {
   try {
-    const notes = await Note.findAll({
-      where: {userId: req.params.userId}
-    })
-    res.send(notes);
+    console.log('HEADERS', req.headers)
+    const user = await User.byToken(req.headers.authorization);
+    if(user.id === parseInt(req.params.userId)){
+      const notes = await Note.findAll({
+        where: {userId: user.id}
+      })
+      res.send(notes);
+    } else{
+      const err = new Error ('Invalid User Access');
+      throw err;
+    }
   } catch (error) {
     next(error)
   }
